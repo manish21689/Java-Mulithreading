@@ -1,0 +1,339 @@
+package com.blank.company;
+
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import oracle.jdbc.OracleTypes;
+
+public class Ora_Procedures {
+
+    public static void main(String[] args) throws SQLException {
+        Repository repo = new Repository();
+        String result = repo.insertData(1, "Rahul", 60000, "IT");
+        System.out.println(result);
+        repo.getAllEmployees();
+        repo.fetchById(101);
+        repo.getSum(50, 13);
+        repo.to_upper("pooja");
+        repo.createTable("deltemp");
+        repo.createProc();
+        repo.callProc();
+        repo.printHeader("deltemp");
+        EmployeeDAO erepo = new EmployeeDAO();
+        erepo.updateTest_employee(101, 99999);
+
+    }
+}
+
+class DBUtil {
+
+    private static Connection conn = null;
+
+    public static Connection getConnection() {
+        //Connection conn=null; // will create New Connection everytime
+        try {
+            if (conn == null || conn.isClosed()) {
+                Class.forName("oracle.jdbc.OracleDriver");
+                String url = "jdbc:oracle:thin:@localhost:1521:xe"; // Replace localhost and port if needed
+                String username = "pihu";
+                String password = "pihu";
+                conn = DriverManager.getConnection(url, username, password);
+                System.out.println("Connected to Oracle Database.");
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        return conn;
+    }
+}
+
+class Repository {
+
+    public String insertData(Integer ecode, String ename, Integer Salary, String department) throws SQLException {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+//          PreparedStatement pstmt = conn.prepareStatement("INSERT INTO test_employee (ecode, ename, salary, department) VALUES (?, ?, ?, ?)");
+            CallableStatement cs = conn.prepareCall("{call insert_test(?,?,?,?)}");
+            cs.setInt(1, ecode);
+            cs.setString(2, ename);
+            cs.setInt(3, Salary);
+            cs.setString(4, department);
+            cs.executeUpdate();
+            conn.commit();
+            cs.close();
+            conn.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            if (conn != null) {
+                conn.close();
+            }
+            return "Record Failed To Insert";
+        }
+        return "Record Inserted Successuflly";
+    }
+
+    public void getAllEmployees() {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            CallableStatement cs = conn.prepareCall("{call getAll_test(?)}");
+            cs.registerOutParameter(1, oracle.jdbc.OracleTypes.CURSOR);
+            cs.execute();
+            // ResultSet rs = cs.getResultSet();
+            ResultSet rs = (ResultSet) cs.getObject(1);
+            while (rs.next()) {
+                System.out.println(rs.getInt(1));
+                System.out.println(rs.getString(2));
+                System.out.println(rs.getInt(3));
+                System.out.println(rs.getString(4));
+                System.out.println("-----------------");
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    public void fetchById(int ecode) {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            CallableStatement cs = conn.prepareCall("{call getemp_byecode_test(?,?)}");
+            cs.setInt(1, ecode);
+            cs.registerOutParameter(2, oracle.jdbc.OracleTypes.CURSOR);
+            cs.execute();
+            // ResultSet rs = cs.getResultSet();
+            ResultSet rs = (ResultSet) cs.getObject(2);
+            while (rs.next()) {
+                System.out.println(rs.getInt(1));
+                System.out.println(rs.getString(2));
+                System.out.println(rs.getInt(3));
+                System.out.println(rs.getString(4));
+                System.out.println("-----------------");
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    public void getSum(int num1, int num2) {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            CallableStatement cs = conn.prepareCall("{? = call getSum(?,?)}");
+            cs.registerOutParameter(1, oracle.jdbc.OracleTypes.INTEGER);
+            cs.setInt(2, num1);
+            cs.setInt(3, num2);
+            cs.execute();
+            int result = cs.getInt(1);
+            System.out.println("result is " + result);
+
+        } catch (Exception e) {
+        }
+    }
+
+    public void to_upper(String name) throws SQLException {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            CallableStatement cs = conn.prepareCall("{ ? = call to_upper(?)}");
+            cs.registerOutParameter(1, oracle.jdbc.OracleType.VARCHAR2);
+            cs.setString(2, name);
+            cs.execute();
+            String result = cs.getString(1);
+            System.out.println(result);
+            cs.close();
+            conn.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            if (conn != null) {
+                conn.close();
+            }
+        }
+    }
+
+    public void createTable(String tbl_name) throws SQLException {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            StringBuilder sb = new StringBuilder();
+            sb.append("create table ")
+                    .append(tbl_name).append(" (")
+                    .append("name varchar2(50), email varchar2(50))");
+            System.out.println(sb.toString());
+            PreparedStatement ps = conn.prepareStatement(sb.toString());
+            ps.executeQuery();
+            System.out.println("Table Created Successfully");
+            conn.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            if (conn != null) {
+                conn.close();
+            }
+        }
+    }
+
+    public void createProc() {
+        try {
+            Connection conn = DBUtil.getConnection();
+            Statement stmt = conn.createStatement();
+            StringBuilder proc = new StringBuilder();
+            proc.append("CREATE OR REPLACE PROCEDURE fetch_xyz_dynamic AS ");
+            proc.append("BEGIN ");
+            proc.append("  FOR rec IN (SELECT * FROM deltemp) LOOP ");
+            proc.append("    DBMS_OUTPUT.PUT_LINE('Name: ' || rec.name || ', Email: ' || rec.email); ");
+            proc.append("  END LOOP; ");
+            proc.append("END;");
+            stmt.execute(proc.toString());
+            System.out.println("Procedure created successfully.");
+            stmt.close();
+            conn.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void callProc() {
+        try {
+            Connection conn = DBUtil.getConnection();
+            CallableStatement cs = conn.prepareCall("{call fetch_xyz_dynamic}");
+            cs.execute();
+            cs.close();
+            System.out.println("Procedure executed.");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+    }
+
+    public void printHeader(String tblname) {
+        try {
+            Connection conn = DBUtil.getConnection();
+            PreparedStatement ps = conn.prepareStatement("select * from " + tblname);
+            ResultSet rs = ps.executeQuery();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+                if (i < rs.getMetaData().getColumnCount()) {
+                    sb.append(rs.getMetaData().getColumnName(i)).append(",");
+                } else {
+                    sb.append(rs.getMetaData().getColumnName(i));
+                }
+            }
+            System.out.println(sb.toString());
+            StringBuilder sb1 = new StringBuilder();
+            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+                if (i < rs.getMetaData().getColumnCount()) {
+                    sb1.append(rs.getMetaData().getColumnTypeName(i)).append(",");
+                } else {
+                    sb1.append(rs.getMetaData().getColumnTypeName(i));
+                }
+            }
+            System.out.println(sb1.toString());
+            rs.close();
+            conn.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+}
+
+class DBConnection {
+
+    public static Connection getConnection() throws Exception {
+        Class.forName("oracle.jdbc.driver.OracleDriver");
+        return DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "pihu", "pihu");
+    }
+}
+
+// todo
+//java trrigger
+//zip,unzip,other function
+//create excel file
+//create csv 
+//create pdf
+//create email (using gmail)
+//create scheduling,timer
+//create chat server,
+//create qr code generation
+//crate twilo generation
+//(java stream 8 if possible)
+//hikaricp jar fils
+class EmployeeDAO {
+
+    public void callAllEmployees() {
+        try (Connection conn = DBConnection.getConnection();
+                CallableStatement cs = conn.prepareCall("{ call GET_ALL_EMPLOYEES(?) }")) {
+
+            cs.registerOutParameter(1, OracleTypes.CURSOR); // Oracle-specific
+            cs.execute();
+
+            ResultSet rs = (ResultSet) cs.getObject(1);
+            while (rs.next()) {
+                System.out.println(rs.getInt("ID") + ", " + rs.getString("NAME") + ", " + rs.getString("DEPT"));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void callEmployeeById(int id) {
+        try (Connection conn = DBConnection.getConnection();
+                CallableStatement cs = conn.prepareCall("{ call GET_EMPLOYEE_BY_ID(?, ?) }")) {
+
+            cs.setInt(1, id);
+            cs.registerOutParameter(2, OracleTypes.CURSOR);
+            cs.execute();
+
+            ResultSet rs = (ResultSet) cs.getObject(2);
+            if (rs.next()) {
+                System.out.println("Name: " + rs.getString("NAME"));
+            } else {
+                System.out.println("No employee found");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void getEmployeeCount() {
+        try (Connection conn = DBConnection.getConnection();
+                CallableStatement cs = conn.prepareCall("{ ? = call GET_EMPLOYEE_COUNT }")) {
+
+            cs.registerOutParameter(1, Types.INTEGER);
+            cs.execute();
+
+            int count = cs.getInt(1);
+            System.out.println("Total Employees: " + count);
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // IT WILL INVOKE TRIGGER UPDATE_TRIGGER AND INSERT INTO LOG TEST_LOG
+    public void updateTest_employee(int id, int sal) throws SQLException {
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            PreparedStatement ps = conn.prepareStatement("update test_employee set salary=? where ecode=?");
+            ps.setInt(1, sal);
+            ps.setInt(2, id);
+            int i = ps.executeUpdate();
+            if (i > 0) {
+                System.out.println("Update Successfully");
+            }
+            conn.commit();
+            conn.close();
+        } catch (Exception e) {
+            if (conn != null) {
+                conn.close();
+            }
+        }
+    }
+}
