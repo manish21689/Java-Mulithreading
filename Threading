@@ -1,0 +1,746 @@
+Thread xyz = new Thread(() -> {
+    System.out.println("hello world");
+});
+xyz.start();
+
+
+Thread xyz = new Thread(new Runnable() {
+    public void run() {
+        System.out.println("hello world");
+    }
+});
+xyz.start();
+
+
+
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("xyz");
+            }
+        };
+        Thread abc = new Thread(task);
+        abc.start();
+
+
+package com.blank.company;
+public class InterviewT {
+    public static void main(String[] args) throws InterruptedException {
+        Thread td = new Thread(() -> {
+            for (int i = 1; i < 150; i++) {
+                System.out.println(Thread.currentThread().getName() +" " + i);
+             }
+        },"A");
+
+        Thread td1 = new Thread(() -> {
+            for (int i = 200; i < 250; i++) {
+                System.out.println(Thread.currentThread().getName() +" " + i);
+            }
+
+        },"B");
+        td.start();
+        td1.start();
+        td.join();
+        td1.join();
+        System.out.println("Work Done ....");
+    }
+}
+
+package com.blank.company;
+
+public class InterviewT {
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread td = new Thread(() -> {
+            firstLoop();
+        }, "A");
+
+        Thread td1 = new Thread(() -> {
+            secondLoop();
+        }, "B");
+        td.start();
+        td1.start();
+        td.join();
+        td1.join();
+        System.out.println("Work Done ....");
+    }
+
+    public static void firstLoop() {
+        for (int i = 1; i < 150; i++) {
+            System.out.println(Thread.currentThread().getName() + " " + i);
+        }
+    }
+
+    public static void secondLoop() {
+        for (int i = 200; i < 250; i++) {
+            System.out.println(Thread.currentThread().getName() + " " + i);
+        }
+    }
+}
+
+package com.blank.company;
+
+public class InterviewT {
+
+    public static void main(String[] args) throws InterruptedException {
+        new Thread(() -> {
+            firstLoop();
+
+        }, "A").start();
+
+        new Thread(() -> {
+            secondLoop();
+        }, "B").start();
+        System.out.println("Work Done ....");
+    }
+
+    public static void firstLoop() {
+        for (int i = 1; i < 150; i++) {
+            System.out.println(Thread.currentThread().getName() + " " + i);
+        }
+    }
+
+    public static void secondLoop() {
+        for (int i = 200; i < 250; i++) {
+            System.out.println(Thread.currentThread().getName() + " " + i);
+        }
+    }
+}
+
+InterThread Communication 
+package com.blank.company;
+
+//Examples of Wait & notify (intecommunication between thread)
+public class InterviewT {
+
+    public static void main(String[] args) throws InterruptedException {
+        InterviewT it = new InterviewT();
+        new Thread(() -> {
+            it.firstLoop();
+        }).start();
+
+        new Thread(() -> {
+            it.secondLoop();
+        }).start();
+    }
+
+    public synchronized void firstLoop() {
+        for (int i = 1; i < 150; i++) {
+            System.out.println(Thread.currentThread().getName() + " " + i);
+        }
+        try {
+            wait();
+        } catch (Exception e) {
+        }
+        System.out.println("I m first Thread ....");
+        System.out.println("Both Thread has done Done ....");
+    }
+
+    public synchronized void secondLoop() {
+        for (int i = 200; i < 250; i++) {
+            System.out.println(Thread.currentThread().getName() + " " + i);
+        }
+        try {
+            System.out.println("Do your Rest work  I have done");
+            notify();
+        } catch (Exception e) {
+        }
+    }
+}
+
+
+package com.blank.company;
+
+//Examples of Wait & notify (intecommunication between thread)
+public class InterviewT {
+
+    public static void main(String[] args) throws InterruptedException {
+        InterviewT it = new InterviewT();
+        new Thread(() -> {
+            it.firstLoop();
+        },"A").start();
+
+        new Thread(() -> {
+            it.secondLoop();
+        },"B").start();
+    }
+
+    public synchronized void firstLoop() {
+        System.out.println(Thread.currentThread().getName() +" This is line 1");
+        System.out.println(Thread.currentThread().getName() +" This is line 2");
+        System.out.println(Thread.currentThread().getName() +" This is line 3");
+        try {
+            wait();
+        } catch (Exception e) {
+        }
+        System.out.println(Thread.currentThread().getName() +" I m first Thread ....");
+        System.out.println(Thread.currentThread().getName()+" Both Thread has done Done ....");
+    }
+
+    public synchronized void secondLoop() {
+        System.out.println(Thread.currentThread().getName() +" This is line 10");
+        System.out.println(Thread.currentThread().getName() +" This is line 11");
+        System.out.println(Thread.currentThread().getName() +" This is line 12");
+        try {
+            System.out.println(Thread.currentThread().getName()+" Do your Rest work  I have done");
+            notify();
+        } catch (Exception e) {
+        }
+    }
+}
+A This is line 1
+A This is line 2
+A This is line 3
+B This is line 10
+B This is line 11
+B This is line 12
+B Do your Rest work  I have done
+A I m first Thread ....
+A Both Thread has done Done ....
+BUILD SUCCESSFUL (total time: 0 seconds)
+
+package com.blank.company;
+
+public class InterviewT {
+    private static final Object lock = new Object();  // shared lock
+    public static void main(String[] args) throws InterruptedException {
+        Thread threadA = new Thread(() -> {
+            synchronized (lock) {
+                firstLoop();
+                try {
+                    lock.wait();  // wait for notification from thread B
+                } catch (InterruptedException e) {
+                    System.out.println(e.getMessage());
+                }
+                System.out.println("I m first Thread ....");
+                System.out.println("Both Thread has done Done ....");
+            }
+        }, "A");
+        Thread threadB = new Thread(() -> {
+            secondLoop();
+            synchronized (lock) {
+                System.out.println("Do your Rest work I have done");
+                lock.notify();  // notify thread A
+            }
+        }, "B");
+        threadA.start();
+        // Make sure thread A starts before B
+        Thread.sleep(100);  // optional: let thread A acquire lock first
+        threadB.start();
+    }
+    public static void firstLoop() {
+        for (int i = 1; i < 150; i++) {
+            System.out.println(Thread.currentThread().getName() + " " + i);
+        }
+    }
+    public static void secondLoop() {
+        for (int i = 200; i < 250; i++) {
+            System.out.println(Thread.currentThread().getName() + " " + i);
+        }
+    }
+}
+
+package com.blank.company;
+
+//Examples of Wait & notify (intecommunication between thread)
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class InterviewT {
+    public static final File file = new File("c:\\temp\\xx.txt");
+    static BufferedWriter bw = null;
+    public static void main(String[] args) throws InterruptedException, IOException {
+        bw = new BufferedWriter(new FileWriter(file));
+        InterviewT it = new InterviewT();
+        new Thread(() -> {
+            try {
+                it.firstLoop();
+            } catch (IOException ex) {
+            }
+        }, "A").start();
+        new Thread(() -> {
+            try {
+                it.secondLoop();
+            } catch (IOException ex) {
+            }
+        }, "B").start();
+    }
+    public synchronized void firstLoop() throws IOException {
+        bw.write(Thread.currentThread().getName() + " This is line 1");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " This is line 2");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " This is line 3");
+        bw.write("\n");
+        try {
+            wait();
+        } catch (Exception e) {
+        }
+        bw.write(Thread.currentThread().getName() + " I m first Thread ....");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " Both Thread has done Done ....");
+        bw.write("\n");
+        bw.close();
+    }
+    public synchronized void secondLoop() throws IOException {
+        bw.write(Thread.currentThread().getName() + " This is line 10");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " This is line 11");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " This is line 12");
+        bw.write("\n");
+        try {
+            bw.write(Thread.currentThread().getName() + " Do your Rest work  I have done");
+            bw.write("\n");
+            notify();
+        } catch (Exception e) {
+        }
+    }
+}
+
+
+package com.blank.company;
+
+//Examples of Wait & notify (intecommunication between thread)
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class InterviewT {
+    static File file = null;
+    static BufferedWriter bw = null;
+    public static void main(String[] args) throws InterruptedException, IOException {
+        file= new File("c:\\temp\\xx.txt");
+        bw = new BufferedWriter(new FileWriter(file));
+        InterviewT it = new InterviewT();
+        new Thread(() -> {
+            try {
+                it.firstLoop();
+            } catch (IOException ex) {
+            }
+        }, "A").start();
+        new Thread(() -> {
+            try {
+                it.secondLoop();
+            } catch (IOException ex) {
+            }
+        }, "B").start();
+    }
+    public synchronized void firstLoop() throws IOException {
+        bw.write(Thread.currentThread().getName() + " This is line 1");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " This is line 2");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " This is line 3");
+        bw.write("\n");
+        try {
+            wait();
+        } catch (Exception e) {
+        }
+        bw.write(Thread.currentThread().getName() + " I m first Thread ....");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " Both Thread has done Done ....");
+        bw.write("\n");
+        bw.close();
+    }
+    public synchronized void secondLoop() throws IOException {
+        bw.write(Thread.currentThread().getName() + " This is line 10");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " This is line 11");
+        bw.write("\n");
+        bw.write(Thread.currentThread().getName() + " This is line 12");
+        bw.write("\n");
+        try {
+            bw.write(Thread.currentThread().getName() + " Do your Rest work  I have done");
+            bw.write("\n");
+            notify();
+        } catch (Exception e) {
+        }
+    }
+}
+
+
+package com.blank.company;
+
+//Examples of Wait & notify (intecommunication between thread)
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class InterviewT {
+
+    static File file = null;
+    static BufferedWriter bw = null;
+    static final Object lock = new Object();
+
+    public static void main(String[] args) throws InterruptedException, IOException {
+        file = new File("c:\\temp\\xx.txt");
+        bw = new BufferedWriter(new FileWriter(file));
+        InterviewT it = new InterviewT();
+        new Thread(() -> {
+            try {
+                it.firstLoop();
+            } catch (IOException ex) {
+            }
+        }, "A").start();
+        new Thread(() -> {
+            try {
+                it.secondLoop();
+            } catch (IOException ex) {
+            }
+        }, "B").start();
+    }
+
+    public void firstLoop() throws IOException {
+        synchronized (lock) {
+            bw.write(Thread.currentThread().getName() + " This is line 1");
+            bw.write("\n");
+            bw.write(Thread.currentThread().getName() + " This is line 2");
+            bw.write("\n");
+            bw.write(Thread.currentThread().getName() + " This is line 3");
+            bw.write("\n");
+            try {
+                lock.wait();
+            } catch (Exception e) {
+            }
+            bw.write(Thread.currentThread().getName() + " I m first Thread ....");
+            bw.write("\n");
+            bw.write(Thread.currentThread().getName() + " Both Thread has done Done ....");
+            bw.write("\n");
+            bw.close();
+        }
+    }
+
+    public void secondLoop() throws IOException {
+        synchronized (lock) {
+            bw.write(Thread.currentThread().getName() + " This is line 10");
+            bw.write("\n");
+            bw.write(Thread.currentThread().getName() + " This is line 11");
+            bw.write("\n");
+            bw.write(Thread.currentThread().getName() + " This is line 12");
+            bw.write("\n");
+            try {
+                bw.write(Thread.currentThread().getName() + " Do your Rest work  I have done");
+                bw.write("\n");
+                lock.notify();
+            } catch (Exception e) {
+            }
+        }
+    }
+}
+
+
+package com.blank.company;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class InterviewT {
+
+    private static final File file = new File("c:\\temp\\xx.txt");
+    private static final Object lock = new Object();
+    private static BufferedWriter bw;
+
+    public static void main(String[] args) {
+        try {
+            bw = new BufferedWriter(new FileWriter(file));
+
+            InterviewT it = new InterviewT();
+
+            Thread threadA = new Thread(() -> {
+                try {
+                    it.firstLoop();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }, "A");
+
+            Thread threadB = new Thread(() -> {
+                try {
+                    it.secondLoop();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }, "B");
+
+            threadA.start();
+            Thread.sleep(100); // Ensure Thread A starts and waits before B starts
+            threadB.start();
+
+            threadA.join();
+            threadB.join();
+
+            bw.close(); // close after both threads are done
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void firstLoop() throws IOException {
+        synchronized (lock) {
+            log("This is line 1");
+            log("This is line 2");
+            log("This is line 3");
+
+            try {
+                lock.wait(); // Wait until second thread notifies
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            log("I m first Thread ....");
+            log("Both Thread has done Done ....");
+        }
+    }
+
+    public void secondLoop() throws IOException {
+        synchronized (lock) {
+            log("This is line 10");
+            log("This is line 11");
+            log("This is line 12");
+
+            log("Do your Rest work I have done");
+            lock.notify(); // Notify first thread to resume
+        }
+    }
+
+    private void log(String message) throws IOException {
+        bw.write(Thread.currentThread().getName() + " " + message);
+        bw.newLine();
+        bw.flush();
+    }
+}
+
+
+package com.blank.company;
+
+public class InterviewT {
+    private int count = 1;
+    private final int LIMIT = 10;
+    private final Object lock = new Object();
+
+    public static void main(String[] args) {
+        InterviewT it = new InterviewT();
+
+        Thread oddThread = new Thread(() -> it.printOdd(), "Odd");
+        Thread evenThread = new Thread(() -> it.printEven(), "Even");
+
+        oddThread.start();
+        evenThread.start();
+    }
+
+    public void printOdd() {
+        while (count <= LIMIT) {
+            synchronized (lock) {
+                while (count % 2 == 0) {
+                    try {
+                        lock.wait();  // wait until it's odd
+                    } catch (InterruptedException e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+                if (count <= LIMIT) {
+                    System.out.println(Thread.currentThread().getName() + " prints: " + count);
+                    count++;
+                    lock.notify();  // wake up even thread
+                }
+            }
+        }
+    }
+
+    public void printEven() {
+        while (count <= LIMIT) {
+            synchronized (lock) {
+                while (count % 2 != 0) {
+                    try {
+                        lock.wait();  // wait until it's even
+                    } catch (InterruptedException e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+                if (count <= LIMIT) {
+                    System.out.println(Thread.currentThread().getName() + " prints: " + count);
+                    count++;
+                    lock.notify();  // wake up odd thread
+                }
+            }
+        }
+    }
+}
+
+package com.blank.company;
+
+public class InterviewT {
+
+    private int count = 1;
+    private final int LIMIT = 10;
+
+    public static void main(String[] args) {
+        InterviewT it = new InterviewT();
+        Thread oddThread = new Thread(() -> it.printOdd(), "Odd");
+        Thread evenThread = new Thread(() -> it.printEven(), "Even");
+        oddThread.start();
+        evenThread.start();
+    }
+
+    public synchronized void printOdd() {
+        while (count <= LIMIT) {
+            while (count % 2 == 0) {
+                try {
+                    wait();  // wait until it's odd
+                } catch (InterruptedException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+            if (count <= LIMIT) {
+                System.out.println(Thread.currentThread().getName() + " prints: " + count);
+                count++;
+                notify();  // wake up even thread
+            }
+        }
+    }
+
+    public synchronized void printEven() {
+        while (count <= LIMIT) {
+            while (count % 2 != 0) {
+                try {
+                    wait();  // wait until it's even
+                } catch (InterruptedException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+            if (count <= LIMIT) {
+                System.out.println(Thread.currentThread().getName() + " prints: " + count);
+                count++;
+                notify();  
+            }
+        }
+    }
+}
+
+Odd prints: 1
+Even prints: 2
+Odd prints: 3
+Even prints: 4
+Odd prints: 5
+Even prints: 6
+Odd prints: 7
+Even prints: 8
+Odd prints: 9
+Even prints: 10
+BUILD SUCCESSFUL (total time: 0 seconds)
+package com.blank.company;
+
+public class InterviewT {
+
+    private int count = 1;
+    private final int LIMIT = 10;
+    private boolean flag = false;
+
+    public static void main(String[] args) {
+        InterviewT it = new InterviewT();
+        Thread oddThread = new Thread(() -> it.printOdd(), "Odd");
+        Thread evenThread = new Thread(() -> it.printEven(), "Even");
+        oddThread.start();
+        evenThread.start();
+    }
+
+    public synchronized void printOdd() {
+        while (count <= LIMIT) {
+            while (flag == true) {
+                try {
+                    wait();  // wait until it's odd
+                } catch (InterruptedException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+            if (count <= LIMIT) {
+                System.out.println(Thread.currentThread().getName() + " prints: " + count);
+                count++;
+                flag = true;
+                notify();  // wake up even thread
+
+            }
+        }
+    }
+
+    public synchronized void printEven() {
+        while (count <= LIMIT) {
+            while (flag == false) {
+                try {
+                    wait();  // wait until it's even
+                } catch (InterruptedException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+            if (count <= LIMIT) {
+                System.out.println(Thread.currentThread().getName() + " prints: " + count);
+                count++;
+                flag = false;
+                notify();
+
+            }
+        }
+    }
+}
+Odd prints: 1
+Even prints: 2
+Odd prints: 3
+Even prints: 4
+Odd prints: 5
+Even prints: 6
+Odd prints: 7
+Even prints: 8
+Odd prints: 9
+Even prints: 10
+BUILD SUCCESSFUL (total time: 0 seconds)
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+public class SquareCallable {
+    public static void main(String[] args) throws Exception {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+
+        Callable<Integer> task = () -> {
+            int number = 5;
+            return number * number;  // 5 * 5 = 25
+        };
+
+        Future<Integer> result = service.submit(task);
+
+        System.out.println("Square is: " + result.get());  // waits and gets result
+
+        service.shutdown();
+    }
+}
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+public class UppercaseCallable {
+    public static void main(String[] args) throws Exception {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+
+        Callable<String> task = () -> {
+            String input = "hello world";
+            return input.toUpperCase();  // HELLO WORLD
+        };
+
+        Future<String> result = service.submit(task);
+
+        System.out.println("Uppercase is: " + result.get());
+
+        service.shutdown();
+    }
+}
